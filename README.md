@@ -1,0 +1,55 @@
+# Gesture Arena 競技場伺服器
+
+此儲存庫供主機架設與交接，包含競技場網站、Socket.IO 伺服器、遊戲核心及 SQLite 排行榜。支援 PVP、觀戰、技能圖鑑、練習與 PVE 一命連戰。
+
+不包含學員包、Python 手勢辨識器、測試程式或驗證紀錄。網站可直接使用鍵盤；使用手勢時需另外提供相容的辨識器。
+
+## 安裝與啟動
+
+使用 **Node.js 22.19.0 x64 / npm 10.9.3**，在此儲存庫根目錄執行：
+
+```sh
+npm ci
+npm run build
+npm start
+```
+
+Windows 也可雙擊 `setup_windows.bat`，完成後雙擊 `start_windows.bat`。安裝紀錄在 `logs/setup.log`。Windows 與 Linux 都使用相同的 npm 指令；啟動目錄必須是專案根目錄。
+
+主機開啟 http://localhost:3000 。其他電腦使用主機的區網 IP，例如 http://192.168.1.100:3000 。安裝套件需要外網；安裝及建置完成後，網站資源均由主機提供。
+
+## 主機設定
+
+複製 `.env.example` 為 `.env`，按需要修改：
+
+| 設定 | 預設值 | 用途 |
+| --- | --- | --- |
+| HOST | 0.0.0.0 | 監聽所有網卡 |
+| PORT | 3000 | 網站及 Socket.IO 使用同一 TCP 埠 |
+| ARENA_NAME | 手勢競技場 | 主機名稱 |
+| MAX_ROOMS | 32 | 房間數量上限，實際容量需依主機評估 |
+| ENABLE_INTERNAL_TEST_MODE | false | 正式架設保持 false |
+| ARENA_DATA_DIR | 使用者主目錄下的 .gesture-arena | 私有排行榜資料夾，可指定絕對路徑 |
+| DATA_WARNING_MB | 512 | SQLite 含 WAL 容量告警門檻 |
+
+在 Windows 防火牆放行所選 TCP 埠的私人網路入站。先從另一台電腦開啟網站確認連線。`GET /health` 提供程序狀態、版本、容量及資料庫告警。
+
+完整架設與維護步驟見 [部署說明](docs/hosting_local.md)。
+
+## 使用
+
+PVP：建立房間後，其他玩家輸入房號加入；紅／藍玩家各自選擇輸入來源並準備，雙方就緒後自動倒數選技與開戰。房內最多兩位玩家與一位觀眾，觀戰頁可移到外接螢幕全螢幕顯示。
+
+鍵盤：A / D / W / S / Space / J / K / L / U / I，網站顯示對應操作。手勢辨識器透過主機網址與本人一次性配對碼連線，協定見 [通訊協定](docs/protocol.md)。
+
+排行榜預設保存在主機使用者的 `.gesture-arena/leaderboard.sqlite`，不放入 Git。重新啟動會中止正在進行的對局，已保存的排行榜仍保留。正式榜只收符合手勢來源規則的結果，鍵盤與混合來源另存。
+
+## 檔案
+
+- `apps/server/`：HTTP、Socket.IO、房間與排行榜維護。
+- `apps/web/`：競技場網站、戰鬥畫面與美術資源。
+- `packages/game-core/`：技能數值、戰鬥、碰撞、輸入及 AI。
+- `packages/protocol/`、`protocol/`：型別、手勢標籤與 JSON Schema。
+- `docs/`：部署、協定與遊戲核心說明。
+
+`npm run build` 產生 `dist/web/`；啟動時仍需要原始碼及 npm 依賴。`node_modules/`、建置產物、`.env` 與資料庫不會上傳。
