@@ -16,7 +16,7 @@ import {
 import { createHash } from "node:crypto";
 const app = express(),
   http = createServer(app);
-const io = new Server(http, { maxHttpBufferSize: 8192, pingInterval: 1000, pingTimeout: 5000 });
+const io = new Server(http, { maxHttpBufferSize: 65536, pingInterval: 1000, pingTimeout: 5000 });
 const dataDir = process.env.ARENA_DATA_DIR ?? join(homedir(), ".gesture-arena");
 const repo = new LeaderboardRepository(join(dataDir, "leaderboard.sqlite"));
 const storageLimitBytes = Math.max(1, Number(process.env.DATA_WARNING_MB) || 512) * 1024 * 1024;

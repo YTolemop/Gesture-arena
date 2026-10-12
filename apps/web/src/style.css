@@ -405,6 +405,20 @@ footer {
 .combat-stage { position:fixed;inset:0;width:100vw;height:100dvh;background:#0c1422;z-index:30; }
 .combat-stage .arena { width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0; }
 .combat-stage canvas { display:block; }
+.camera-panels { position:absolute;inset:0;pointer-events:none; }
+.combat-stage > .camera-panels { inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16)); }
+.arena-with-camera { position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#0c1422; }
+.arena-with-camera .arena { height:100%;aspect-ratio:auto; }
+.arena-with-camera .camera-panel { width:min(18%,220px);min-width:80px; }
+.arena-with-camera:fullscreen { width:100vw;height:100dvh;aspect-ratio:auto;border-radius:0; }
+.arena-with-camera:fullscreen .camera-panels { inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16)); }
+.camera-panel { position:absolute;top:12%;width:clamp(150px,16vw,240px);background:#081321ed;border:1px solid var(--camera-color);border-radius:8px;overflow:hidden;box-shadow:0 4px 20px #0006;pointer-events:auto; }
+.camera-red { left:3%;--camera-color:#ed7891; }.camera-blue { right:3%;--camera-color:#73adfa; }
+.camera-title { display:flex;align-items:center;gap:8px;padding:5px 9px;font-size:12px; }.camera-title b { color:var(--camera-color);white-space:nowrap; }.camera-title span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }.camera-title i { margin-left:auto;flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#637082; }.camera-title i.camera-live { background:#71e9b3; }
+.camera-view { position:relative;aspect-ratio:4/3;background:#07101b;overflow:hidden; }.camera-mirror { position:absolute;inset:0;transform:scaleX(-1); }.camera-view img,.camera-view svg { position:absolute;inset:0;width:100%;height:100%;object-fit:contain; }.camera-view svg { fill:#ffe3a0;stroke:#72efbb;stroke-width:2; }.camera-view polyline { fill:none; }.camera-placeholder { display:grid;place-items:center;height:100%;color:#50677e;font-size:30px; }
+.camera-status { padding:5px 8px;font-size:11px;min-height:25px;line-height:1.4;color:#c7d5e5; }.camera-status button { padding:2px 6px;margin-left:6px;font-size:11px; }
+@media(max-width:700px) { .camera-panel { width:clamp(100px,23vw,150px); }.camera-title { font-size:10px;padding:4px 6px; }.camera-status { font-size:10px; } }
+@media(max-height:500px) and (min-width:701px) { .camera-panel { width:130px; } }
 .combat-toolbar { position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 16px;background:#0a1320dd;border:1px solid #3d5064;border-radius:10px;font-size:13px; }
 .combat-toolbar button { padding:8px 12px; }.combat-dialog { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:32px;border:1px solid #718ba4;background:#101b2fee;border-radius:16px;text-align:center;min-width:400px;box-shadow:0 20px 80px #0009; }.combat-dialog label { display:block;margin:20px 0; }
 @media(max-width:1100px) { .draft-shell { grid-template-columns:190px minmax(0,1fr) 190px;gap:12px;padding:16px; }.draft-grid { grid-template-columns:repeat(3,1fr); }.lobby-controls { flex-wrap:wrap; }.lobby-pair { flex-wrap:wrap; } }

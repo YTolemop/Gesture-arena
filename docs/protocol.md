@@ -1,5 +1,36 @@
 # Socket.IO v1 協定
 
+## 鏡頭預覽
+
+雙人戰鬥介面在六氣條下方的左右上角顯示手勢玩家預覽；各席位依該玩家的 source=recognizer 決定是否顯示，键盤玩家不顯示。觀戰席套用相同規則。單人與訓練場只在玩家選擇手勢操控時顯示左上鏡頭，全螢幕保留預覽。網站不開啟瀏覽器鏡頭，直接接收已配對辨識器的影像與骨架。桌面 Gesture-Player-main 與 Gesture-Player-Demo 均已接上此接口。
+
+`camera:frame {protocolVersion:1,sessionId,generation,image?,hands?}` 可以從 `/arena` 的玩家 socket，或 `/controller` 的已配對辨識器 socket 傳送。至少提供 image 或 hands；禁止其他欄位。image 為 `data:image/jpeg;base64,...`，上限 48000 字元。hands 是 0–2 隻手，每隻恰好 21 個 `{x,y}` 點，採 MediaPipe 索引順序，座標 0–1，依未鏡像的完整 4:3 預覽畫布正規化。非 4:3 原圖需等比例補黑邊，骨架也需轉換到補邊後座標。網站對影像與骨架一起鏡像；不要預先鏡像。hands 省略表示未提供辨識結果，不能解讀為「未偵測到手」；空陣列才表示沒有手。只提供 hands 時顯示骨架。
+
+預览與戰鬥輸入互相獨立，不更改準備、輸入標籤或心跳。伺服器校驗 socket 所屬玩家、session、generation；觀戰席不能發布。每個 socket 最快 120ms 一包，超速或無效封包丟棄、不 ACK、不保存影像。Socket.IO 傳輸上限調為 65536 bytes，但既有輸入仍保持原本 2048 字元及嚴格欄位校驗。
+
+伺服器向本房三個網站席位 volatile 轉送 `{roomCode,playerId,generation,seat:0|1,image?,hands?,source:browser|controller}`，不轉送憑證。預覽不放進 20Hz snapshot。辨識器傳送 320×240 JPEG，約每 150ms 一張。最近 2 秒內有辨識器影像時，伺服器優先辨識器、丟棄網頁預覽。網站超過 2.5 秒沒有新畫面就隱藏舊畫面，顯示等待狀態；手勢辨識來源中斷時提示配對或開啟辨識器鏡頭，不另開瀏覽器鏡頭。
+
+Python 辨識器在獨立專案，需從既有擷取迴圈呼叫此事件，不能另外開一支鏡頭。可依下面範例傳送已補邊的 320×240 BGR 畫面；請以單調時鐘節流至每 150ms 一次，使用最新 `controller:context` 的 sessionId/generation，並在重新配對時更新 context：
+
+```python
+import base64
+import cv2
+
+def send_arena_preview(sio, context, preview_bgr, hands=None):
+    ok, jpeg = cv2.imencode('.jpg', preview_bgr,
+                            [cv2.IMWRITE_JPEG_QUALITY, 55])
+    if not ok:
+        return
+    image = 'data:image/jpeg;base64,' + base64.b64encode(jpeg).decode('ascii')
+    if len(image) > 48000:
+        return
+    payload = dict(protocolVersion=1, sessionId=context['sessionId'],
+                   generation=context['generation'], image=image)
+    if hands is not None:
+        payload['hands'] = hands  # list of 21-point lists, normalized x/y
+    sio.emit('camera:frame', payload, namespace='/controller')
+```
+
 同 origin HTTP；Socket.IO path `/socket.io`。網站 namespace `/arena`，Python `/controller`。Socket.IO v4／Engine.IO v4，Python socketio 5.x。不是裸 WebSocket。
 
 協定定義位於 `protocol/gesture_labels.json` 與 `protocol/schemas/`，TypeScript 型別位於 `packages/protocol/index.ts`。控制器由獨立專案提供；本儲存庫只交付競技場。版本 1 包含 generation，所有輸入都需符合此契約。

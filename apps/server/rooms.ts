@@ -12,6 +12,7 @@ import {
 import { AIController, aiLoadout } from "../../packages/game-core/ai.js";
 import { validInput, Source } from "../../packages/protocol/index.js";
 import { LeaderboardRepository, RunResult } from "./leaderboard.js";
+import { validCameraFrame } from "../../packages/protocol/camera.js";
 const token = () => randomBytes(24).toString("hex");
 export interface Player {
   nickname: string;
@@ -274,6 +275,7 @@ export class RoomManager {
     });
   }
   attachArena(s: Socket) {
+    s.on("camera:frame", (v) => this.camera(s, v, false));
     this.ack(s, "room:create", (v) => this.create(s, { ...v, mode: "PVP" }));
     this.ack(s, "solo:create", (v) => this.create(s, v));
     this.ack(s, "room:join", (v) => {
@@ -643,6 +645,7 @@ export class RoomManager {
       this.error("PLAYERS_NOT_READY");
   }
   attachController(s: Socket) {
+    s.on("camera:frame", (v) => this.camera(s, v, true));
     this.ack(s, "controller:pair", (v) => {
       if (s.data.roomCode) this.error("ALREADY_JOINED");
       const ip = s.id;
@@ -740,6 +743,25 @@ export class RoomManager {
       } catch {}
     });
     s.on("disconnect", () => this.disconnect(s, true));
+  }
+  camera(s: Socket, v: any, controller: boolean) {
+    try {
+      const now = this.now();
+      if (now - (s.data.cameraAttemptAt ?? -Infinity) < 120) return;
+      s.data.cameraAttemptAt = now;
+      if (!validCameraFrame(v) || JSON.stringify(v).length > 56000) return;
+      const r = this.room(s.data.roomCode);
+      const i = r.players.findIndex(p => controller ? p?.controller?.socket === s : p?.socket === s);
+      if (i < 0) return;
+      const p = r.players[i]!, session = controller ? p.controller!.session : p.session;
+      if (v.sessionId !== session || v.generation !== p.generation) return;
+      if (controller && p.source !== "recognizer") return;
+      // Prefer the recognizer's existing capture when it is supplying previews.
+      if (!controller && p.controller?.socket && now - (p.controller.socket.data.cameraSentAt ?? -Infinity) < 2000) return;
+      s.data.cameraSentAt = now;
+      const frame = { roomCode: r.code, playerId: p.id, generation: p.generation, seat: i, image: v.image, hands: v.hands, source: controller ? "controller" : "browser" };
+      for (const member of [...r.players, r.spectator]) member?.socket?.volatile.emit("camera:frame", frame);
+    } catch { /* Invalid or departed senders cannot publish a preview. */ }
   }
   input(s: Socket, v: any, cb: any, controller: boolean) {
     let result: any;

@@ -7,6 +7,7 @@
     "node": ">=22.19.0 <23"
   },
   "scripts": {
+    "test:camera": "tsx --test tests/camera.test.ts",
     "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
     "start": "tsx apps/server/index.ts",
     "dev": "vite --config apps/web/vite.config.ts --host 127.0.0.1"

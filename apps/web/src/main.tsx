@@ -12,6 +12,7 @@ import "./style.css";
 import { claimTabSession } from "./tab-session";
 import { PvpRoom } from "./pvp";
 import { SoloDraft } from "./solo-draft";
+import { CameraPanels } from "./camera";
 const socket = io("/arena", { autoConnect: false });
 const keys: Record<string, string> = {
   a: "MOVE_LEFT",
@@ -541,7 +542,7 @@ function App() {
           state.mode === "PVP" ? <PvpRoom state={state} auth={auth} request={request} save={save} code={code} setCode={setCode} leave={async()=>{
             if(!confirm("離開目前房間？"))return;
             await request("room:leave"); authRef.current=null;setAuth(null);setState(null);sessionStorage.removeItem("arena-auth");setTab("home");
-          }}>{state.core&&<Arena state={state} boxes={false}/>}</PvpRoom> :
+          }}>{state.core&&<><Arena state={state} boxes={false}/><CameraPanels socket={socket} state={state} auth={auth}/></>}</PvpRoom> :
           <>
             <div className="room-heading">
               <div>
@@ -556,7 +557,7 @@ function App() {
               <button
                 hidden={["CONFIG","SOLO_DRAFT"].includes(state.phase)}
                 onClick={() =>
-                  document.querySelector(".arena")?.requestFullscreen()
+                  document.querySelector(".arena-with-camera")?.requestFullscreen()
                 }
               >
                 全螢幕觀戰
@@ -577,7 +578,7 @@ function App() {
             {state.phase === "SOLO_DRAFT" ? <SoloDraft state={state} request={request} readOnly={spectator}/> : <div className={`room-body ${state.phase === "CONFIG" ? "solo-lobby" : ""}`}>
               <section className="play-column">
                 {state.core && state.phase !== "CONFIG" ? (
-                  <Arena state={state} boxes={boxes} />
+                  <div className="arena-with-camera"><Arena state={state} boxes={boxes} /><CameraPanels socket={socket} state={state} auth={auth}/></div>
                 ) : (
                   <div className="empty-arena">
                     ✦<p>等待配置與選技完成</p>
