@@ -13,6 +13,7 @@ import { claimTabSession } from "./tab-session";
 import { PvpRoom } from "./pvp";
 import { SoloDraft } from "./solo-draft";
 import { CameraPanels } from "./camera";
+import { usePairCode } from "./pair-code";
 const socket = io("/arena", { autoConnect: false });
 const keys: Record<string, string> = {
   a: "MOVE_LEFT",
@@ -57,7 +58,6 @@ function App() {
     [nickname, setNickname] = useState("玩家"),
     [roomCode, setRoomCode] = useState(""),
     [error, setError] = useState(""),
-    [code, setCode] = useState(""),
     [label, setLabel] = useState("NONE"),
     [loadout, setLoadout] = useState<Loadout>({ ...DEFAULT_LOADOUT }),
     [query, setQuery] = useState(""),
@@ -95,6 +95,9 @@ function App() {
           },
         ),
     );
+  const pairingPlayer = state?.players[auth?.seat === "red" ? 0 : 1];
+  const pairingScope = JSON.stringify([auth?.roomCode, auth?.sessionId, auth?.playerToken, auth?.seat, pairingPlayer?.source]);
+  const { code, clearCode, generateCode, secondsRemaining } = usePairCode(pairingScope, !!pairingPlayer?.controllerConnected, request);
   const save = (a: any) => {
     setAuth(a);
     authRef.current = a;
@@ -145,7 +148,7 @@ function App() {
       setTab("home");
     });
     socket.on("controller:status", (s) => setLabel(s.gesture));
-    socket.on("player:identity", (identity) => { save({ ...authRef.current, ...identity }); setCode(""); });
+    socket.on("player:identity", (identity) => { save({ ...authRef.current, ...identity }); clearCode(); });
     void tabSession.ready.then((restore) => {
       if (disposed) return;
       if (!restore) {
@@ -539,7 +542,7 @@ function App() {
           </>
         )}
         {tab === "room" && state && (
-          state.mode === "PVP" ? <PvpRoom state={state} auth={auth} request={request} save={save} code={code} setCode={setCode} leave={async()=>{
+          state.mode === "PVP" ? <PvpRoom state={state} auth={auth} request={request} save={save} code={code} clearCode={clearCode} generateCode={generateCode} secondsRemaining={secondsRemaining} leave={async()=>{
             if(!confirm("離開目前房間？"))return;
             await request("room:leave"); authRef.current=null;setAuth(null);setState(null);sessionStorage.removeItem("arena-auth");setTab("home");
           }}>{state.core&&<><Arena state={state} boxes={false}/><CameraPanels socket={socket} state={state} auth={auth}/></>}</PvpRoom> :
@@ -701,12 +704,8 @@ function App() {
                       <>
                         <button
                           onClick={async () => {
-                            const a = await request("controller:code", {
-                              replace: me.controllerConnected
-                                ? confirm("確認撤銷並替換目前控制器？")
-                                : false,
-                            });
-                            if (a) setCode(a.pairCode);
+                            if (me.controllerConnected && !confirm("確認撤銷並替換目前控制器？")) return;
+                            await generateCode({ replace: !!me.controllerConnected });
                           }}
                         >
                           產生配對碼
@@ -714,7 +713,7 @@ function App() {
                         {code && (
                           <p className="pair-code">
                             {code}
-                            <small>120秒內有效，僅提供給自己的工具</small>
+                            <small>剩餘 {secondsRemaining} 秒，僅提供給自己的工具</small>
                           </p>
                         )}
                         <p>

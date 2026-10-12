@@ -12,12 +12,12 @@ export function aiLoadout(n: number): Loadout {
 }
 export function difficulty(n: number) {
   return n <= 3
-    ? { delay: 36, chance: 0.35 }
+    ? { delay: 60, chance: 0.15, attackGap: 240, retreatDistance: 120, ultimateUnlock: 2400 }
     : n <= 6
-      ? { delay: 27, chance: 0.5 }
+      ? { delay: 48, chance: 0.25, attackGap: 180, retreatDistance: 180, ultimateUnlock: 1800 }
       : n <= 9
-        ? { delay: 18, chance: 0.65 }
-        : { delay: 12, chance: 0.8 };
+        ? { delay: 36, chance: 0.4, attackGap: 132, retreatDistance: 240, ultimateUnlock: 1500 }
+        : { delay: 24, chance: 0.55, attackGap: 96, retreatDistance: 300, ultimateUnlock: 1200 };
 }
 export class AIController {
   seed: number;
@@ -26,6 +26,7 @@ export class AIController {
   label: Label = "NONE";
   blockedUntil = 0;
   restUntil = 0;
+  nextAttack = 0;
   constructor(
     seed: number,
     public round: number,
@@ -97,7 +98,7 @@ export class AIController {
         a.qi >= s.cost &&
         (!s.cost || a.imbalance === 0) &&
         (a.cooldowns[id] ?? 0) <= 0 &&
-        (s.slot !== "ultimate" || state.elapsed[1] >= 1200)
+        (s.slot !== "ultimate" || state.elapsed[1] >= diff.ultimateUnlock)
       );
     };
     const reaches = (id: string) => {
@@ -115,17 +116,17 @@ export class AIController {
       return ["target", "field"].includes(s.kind);
     };
     if (label === "NONE") {
-      if (a.hp < 400 && legal(a.loadout.defense) && this.random() < 0.5)
+      if (a.hp < 400 && legal(a.loadout.defense) && this.random() < diff.chance)
         label = "DEFENSE_SKILL";
-      else if (legal(a.loadout.ultimate) && reaches(a.loadout.ultimate))
+      else if (core.tick >= this.nextAttack && legal(a.loadout.ultimate) && reaches(a.loadout.ultimate))
         label = "ULTIMATE";
-      else if (legal(a.loadout.attack) && reaches(a.loadout.attack))
+      else if (core.tick >= this.nextAttack && legal(a.loadout.attack) && reaches(a.loadout.attack))
         label = "ATTACK_SKILL";
-      else if (legal(a.loadout.control) && reaches(a.loadout.control))
+      else if (core.tick >= this.nextAttack && legal(a.loadout.control) && reaches(a.loadout.control))
         label = "CONTROL_SKILL";
-      else if (dist < 164 && legal("normal")) label = "NORMAL_ATTACK";
+      else if (core.tick >= this.nextAttack && dist < 164 && legal("normal")) label = "NORMAL_ATTACK";
       else if (dist > 700) label = p.x < a.x ? "MOVE_LEFT" : "MOVE_RIGHT";
-      else if (dist < 400) label = p.x < a.x ? "MOVE_RIGHT" : "MOVE_LEFT";
+      else if (dist < diff.retreatDistance) label = p.x < a.x ? "MOVE_RIGHT" : "MOVE_LEFT";
     }
     if (
       [
@@ -140,6 +141,8 @@ export class AIController {
     )
       label = "NONE";
     this.label = label;
+    if (["NORMAL_ATTACK", "ATTACK_SKILL", "CONTROL_SKILL", "ULTIMATE"].includes(label))
+      this.nextAttack = core.tick + diff.attackGap;
     core.input(1, label);
     if (this.sampled.size > 256) {
       const keep = new Set(threats.map((c: any) => c.id));
