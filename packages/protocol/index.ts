@@ -27,8 +27,19 @@ export interface Input {
   sessionId: string;
   matchId: string | null;
   seq: number;
-  gesture: Label;
+  gesture?: Label;
+  commands?: Commands;
   generation: number;
+}
+export interface Commands { left: Label; right: Label; both: Label }
+export function validCommands(v: any): v is Commands {
+  return !!v && typeof v === "object" && !Array.isArray(v) &&
+    Object.keys(v).length === 3 &&
+    ["left", "right", "both"].every(k => LABELS.includes(v[k])) &&
+    (v.both === "NONE" || (v.left === "NONE" && v.right === "NONE"));
+}
+export function inputLabels(v: Input): Label[] {
+  return v.commands ? [...new Set([v.commands.left, v.commands.right, v.commands.both])].filter(x => x !== "NONE") : [v.gesture!];
 }
 export function validInput(v: any): v is Input {
   return (
@@ -41,7 +52,8 @@ export function validInput(v: any): v is Input {
     v.seq >= 0 &&
     Number.isSafeInteger(v.generation) &&
     v.generation >= 1 &&
-    LABELS.includes(v.gesture) &&
+    ((Object.prototype.hasOwnProperty.call(v, "gesture") && !Object.prototype.hasOwnProperty.call(v, "commands") && LABELS.includes(v.gesture)) ||
+      (!Object.prototype.hasOwnProperty.call(v, "gesture") && validCommands(v.commands))) &&
     Object.keys(v).every((k) =>
       [
         "protocolVersion",
@@ -49,6 +61,7 @@ export function validInput(v: any): v is Input {
         "matchId",
         "seq",
         "gesture",
+        "commands",
         "generation",
         "diagnostics",
       ].includes(k),

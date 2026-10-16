@@ -1,4 +1,4 @@
-export const RULES_VERSION = "numeric-v2-2026-10-08";
+export const RULES_VERSION = "three-channel-v3-2026-10-17";
 export const AI_VERSION = "ai-v2-gentler-opening";
 export type Slot = "attack" | "defense" | "control" | "ultimate" | "normal";
 export type Shape =

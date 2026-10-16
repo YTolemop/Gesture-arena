@@ -176,7 +176,7 @@ export class GameCore {
   }
   blocking(a: Actor) {
     return (
-      a.input.label === "BLOCK" &&
+      a.input.has("BLOCK") &&
       a.ground &&
       a.stun <= this.tick &&
       a.busy <= this.tick &&
@@ -192,7 +192,7 @@ export class GameCore {
       a.blockStop <= this.tick
     );
   }
-  input(i: number, label: Label) {
+  input(i: number, label: Label | Label[]) {
     this.actors[i].input.receive(label, this.tick);
   }
   spend(a: Actor, amount: number) {
@@ -607,18 +607,19 @@ export class GameCore {
     }
     for (let i = 0; i < 2; i++) {
       const a = this.actors[i],
-        label = a.input.label;
+        label = a.input.has("MOVE_LEFT") !== a.input.has("MOVE_RIGHT")
+          ? (a.input.has("MOVE_LEFT") ? "MOVE_LEFT" : "MOVE_RIGHT") : "NONE";
       if (!a.cast && a.busy <= t) {
         const delta = this.actors[1 - i].x - a.x;
         if (delta) a.dir = Math.sign(delta);
       }
-      for (const cmd of a.input.consume()) {
-        const reason = this.attempt(i, cmd);
-        this.events.push({ type: "input", actor: i, label: cmd, reason });
-      }
       if (label === "MOVE_LEFT" || label === "MOVE_RIGHT") {
         a.recentDir = label === "MOVE_LEFT" ? -1 : 1;
         a.recentTick = t;
+      }
+      for (const cmd of a.input.consume()) {
+        const reason = this.attempt(i, cmd);
+        this.events.push({ type: "input", actor: i, label: cmd, reason });
       }
       const free = a.stun <= t && a.busy <= t && a.blockStop <= t;
       let dx = 0;
@@ -630,10 +631,10 @@ export class GameCore {
       } else if (free && a.root <= t) {
         if (label === "MOVE_LEFT" || label === "MOVE_RIGHT")
           dx = ((a.recentDir * 320) / 60) * (1 - this.slow(a, i));
-        else if (label === "JUMP" && !a.ground)
+        else if (a.input.has("JUMP") && !a.ground)
           dx = ((a.jumpDir * 320) / 60) * (1 - this.slow(a, i));
       }
-      a.crouch = a.ground && free && label === "CROUCH";
+      a.crouch = a.ground && free && a.input.has("CROUCH");
       a.x = clamp(a.x + dx);
       if (!a.ground) {
         a.y += a.vy / 60 + 1400 / 3600;
@@ -971,6 +972,7 @@ export class GameCore {
         ),
         revealed: a.revealed,
         label: a.input.label,
+        labels: [...a.input.labels],
       })),
       objects: this.objects,
     };

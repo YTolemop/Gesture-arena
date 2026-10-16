@@ -239,7 +239,8 @@ export function Arena({ state, boxes }: { state: any; boxes: boolean }) {
             x = a.x,
             y = a.y,
             h = a.crouch ? 96 : 168;
-          const moving = ["MOVE_LEFT","MOVE_RIGHT"].includes(a.label) && a.ground && !a.stun && !a.root;
+          const labels: string[] = a.labels ?? [a.label];
+          const moving = (labels.includes("MOVE_LEFT") !== labels.includes("MOVE_RIGHT")) && a.ground && !a.stun && !a.root;
           const frame = a.crouch ? 3 : a.blocking ? 5 : a.cast || a.busy ? 4
             : moving ? 1 + Math.floor(now/130)%2 : 0;
           const sprite = fighters[i];

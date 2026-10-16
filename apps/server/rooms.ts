@@ -10,7 +10,7 @@ import {
   validLoadout,
 } from "../../packages/game-core/skills.js";
 import { AIController, aiLoadout } from "../../packages/game-core/ai.js";
-import { validInput, Source } from "../../packages/protocol/index.js";
+import { validInput, inputLabels, Source } from "../../packages/protocol/index.js";
 import { LeaderboardRepository, RunResult } from "./leaderboard.js";
 import { validCameraFrame } from "../../packages/protocol/camera.js";
 const token = () => randomBytes(24).toString("hex");
@@ -785,16 +785,20 @@ export class RoomManager {
       auth.seq = v.seq;
       auth.heartbeat = this.now();
       if (["PLAYING", "OVERTIME"].includes(r.phase))
-        r.core!.input(i, v.gesture);
+        r.core!.input(i, inputLabels(v));
       result = { ok: true, seq: v.seq };
       s.emit("controller:status", {
-        gesture: v.gesture,
+        gesture: inputLabels(v)[0] ?? "NONE",
+        commands: v.commands,
+        gestures: inputLabels(v),
         seq: v.seq,
         seat: i,
         phase: r.phase,
       });
       p.socket?.emit("controller:status", {
-        gesture: v.gesture,
+        gesture: inputLabels(v)[0] ?? "NONE",
+        commands: v.commands,
+        gestures: inputLabels(v),
         seq: v.seq,
         seat: i,
         phase: r.phase,
@@ -1024,7 +1028,7 @@ export class RoomManager {
                   ? "CROUCH"
                   : r.config.dummy === "jump" &&
                       d.ground &&
-                      d.input.label !== "JUMP"
+                      !d.input.has("JUMP")
                     ? "JUMP"
                     : "NONE";
             c.input(1, label);

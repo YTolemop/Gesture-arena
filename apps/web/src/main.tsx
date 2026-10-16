@@ -147,7 +147,7 @@ function App() {
       sessionStorage.removeItem("arena-auth");
       setTab("home");
     });
-    socket.on("controller:status", (s) => setLabel(s.gesture));
+    socket.on("controller:status", (s) => setLabel(s.gestures?.length ? s.gestures.join(" + ") : s.gesture));
     socket.on("player:identity", (identity) => { save({ ...authRef.current, ...identity }); clearCode(); });
     void tabSession.ready.then((restore) => {
       if (disposed) return;

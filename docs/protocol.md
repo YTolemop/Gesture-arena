@@ -47,7 +47,7 @@ def send_arena_preview(sio, context, preview_bgr, hands=None):
 
 `controller:code {replace?:boolean}` 僅本人；6位字串、120秒、一次性，活躍配對碼在全主機唯一；已有控制器需明確 replace。`controller:pair {protocolVersion:1,roomCode?,pairCode,source:recognizer|simulated,algorithms:{normalization,knn,filterEnabled,filter}}`。房碼省略或空字串時以配對碼定位唯一有效玩家，無匹配／歧義／已使用均拒絕；提供房码時仍限定該房。ACK回傳內部roomCode，Python保存供重連使用。source simulated 只在主機 internal flag 開啟時接受。`controller:resume {roomCode,controllerToken}` 產生新session；token≥192bit熵，與玩家／房主分離。`controller:availability` 更新必要接口狀態。未填TODO無法正式準備，未啟用濾波不影響。
 
-`input:state {protocolVersion:1,sessionId,matchId,seq,generation,gesture}`。seq是非負安全整數嚴格遞增；版本、session、socket、match、generation、來源錯誤不刷新輸入活性。未知欄位拒絕，最大2048位元組（上限以JSON文字長度另配Socket.IO8192bytes限制）。`matchId=null` 準備區只顯示输入測試，不進核心。新局、跨關、重置獨立matchId；倒數／暂停不施法、不武裝。開始后先收到NONE，再6個戰鬥tick重武裝一次性動作。输入過期30tick轉NONE；心跳不維持舊標籤。
+`input:state` 的共同欄位為 `protocolVersion:1,sessionId,matchId,seq,generation`，另帶三通道 `commands`，或相容舊版的單一 `gesture`（兩者互斥）。seq是非負安全整數嚴格遞增；版本、session、socket、match、generation、來源錯誤不刷新輸入活性。未知欄位拒絕，最大2048位元組（上限以JSON文字長度另配Socket.IO8192bytes限制）。`matchId=null` 準備區只顯示输入測試，不進核心。新局、跨關、重置獨立matchId；倒數／暂停不施法、不武裝。開始后先收到NONE，再6個戰鬥tick重武裝一次性動作。输入過期30tick轉NONE；心跳不維持舊標籤。
 
 `controller:context` 主動推送 roomId、roomCode、matchId、phase、mode、runId、roundIndex、generation、source、sessionId、版本；不傳配置。Python換context清輸出與濾波，不積壓舊輸入。辨識器 `client:heartbeat` 每0.5秒，2秒無心跳斷開並暫停必要來源；網站連線採 Socket.IO pingInterval 1秒／pingTimeout 5秒，避免背景分頁計時器降速誤判。舊遊戲輸入仍在30tick解除。PVP重連由雙方重新準備，自動5秒倒數；單人恢復3秒倒數。PVE失聯30秒結束未完成；觀眾／未選控制器不暫停。
 
@@ -62,3 +62,14 @@ PVP：雙方 `player:ready {ready:true}` → DRAFT_COUNTDOWN 5秒 → DRAFT。AB
 `leaderboard:list {rulesVersion?,aiVersion?,offset?,limit?,eligible?}`公開唯讀，分頁最多100；HTTP `/api/leaderboard`同樣。沒有提供任何客户端寫分／清榜接口，維護只由私有主機CLI操作，因此一般房主無法清全主機榜。
 
 主要錯誤碼：ROOM_NOT_FOUND / ROOM_CAPACITY / PLAYER_FULL / SPECTATOR_FULL / JOIN_CLOSED / ALREADY_JOINED / INVALID_NICKNAME / PLAYER_REQUIRED / HOST_REQUIRED / INVALID_TOKEN / INVALID_SESSION / INVALID_INPUT / PROTOCOL_VERSION / STALE_MATCH / STALE_GENERATION / STALE_SEQ / WRONG_SOURCE / INVALID_PAIR_CODE / PAIR_RATE_LIMIT / INTERNAL_MODE_REQUIRED / CONTROLLER_EXISTS / CONTROLLER_NOT_READY / ALGORITHMS_REQUIRED / PLAYERS_NOT_READY / NOT_YOUR_TURN / WRONG_SLOT / SLOT_FILLED / SKILL_TAKEN / CONFIG_LOCKED / RUN_CONFIG_LOCKED / INVALID_LOADOUT / INVALID_POSITION / PAUSE_REQUIRED / NOT_PAUSED / NOT_RESULT / FORFEIT_NOT_ALLOWED。
+
+
+## 左手、右手與雙手接口
+
+`commands` 必須包含 `left`、`right`、`both`，每欄都是 gesture_labels.json 的標籤；沒有指令時明確填 `NONE`。這是完整狀態封包，不是三個獨立事件。左右手最多同時兩個指令；`both` 非 NONE 時，left/right 必須都是 NONE，混用會回 INVALID_INPUT。
+
+重複標籤只執行一次；MOVE_LEFT 與 MOVE_RIGHT 同時出現時水平移動抵銷。持續動作各自生效，一次性動作按 left、right 順序嘗試，仍受冷卻、資源與硬直等規則限制。每個標籤獨立離開至少 6 tick 才可再觸發，換手維持同一標籤不算重新觸發。雙手模式依同樣規則處理一個標籤。每 tick 最多排入兩個一次性動作，避免多封包堆積。
+
+開始／重置後必須先收到全部 NONE，超過 30 tick 沒有新輸入則清空持續狀態與待執行動作。`controller:status` 增加 `commands`（三通道客戶端）與去重後的 `gestures`；`gesture` 保留第一個指令供舊顯示使用。核心快照增加 `labels` 表示所有有效指令，`label` 保留作舊版顯示欄位。
+
+此為 protocolVersion 1 的相容擴充：新伺服器接受舊封包，新三通道客戶端需要更新後的伺服器。配對、session、generation、seq 與來源驗證維持原規則。
