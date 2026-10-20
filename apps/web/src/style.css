@@ -413,11 +413,11 @@ footer {
 .arena-with-camera:fullscreen { width:100vw;height:100dvh;aspect-ratio:auto;border-radius:0; }
 .arena-with-camera:fullscreen .camera-panels { inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,calc(100dvh * 16 / 9));height:min(100dvh,calc(100vw * 9 / 16)); }
 .camera-panel { position:absolute;top:calc(11.7% + clamp(60px,9cqw,120px));width:clamp(150px,16vw,240px);background:#081321ed;border:1px solid var(--camera-color);border-radius:8px;overflow:hidden;box-shadow:0 4px 20px #0006;pointer-events:auto; }
-.cooldown-row { position:absolute;top:11.7%;width:28%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(2px,.6cqw,10px);font-size:clamp(6px,1.05cqw,14px);color:#dbe6ef;pointer-events:auto; }
+.cooldown-row { position:absolute;top:11.7%;width:24%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(2px,.5cqw,8px);font-size:clamp(6px,1cqw,13px);color:#dbe6ef;pointer-events:auto; }
 .cooldown-red { left:3.33%;--skill-color:#ef93a5; }.cooldown-blue { right:3.33%;--skill-color:#8fbeff; }
-.cooldown-skill { display:flex;align-items:center;flex-direction:column;gap:1px;padding:clamp(1px,.4cqw,6px);min-width:0;background:#081321df;border:1px solid #52617480;border-radius:7px; }
+.cooldown-skill { display:flex;align-items:center;flex-direction:column;gap:1px;padding:clamp(1px,.3cqw,4px);min-width:0;background:#081321df;border:1px solid #52617480;border-radius:7px; }
 .cooldown-slot { color:var(--skill-color);font-size:.85em; }.cooldown-name { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center; }.cooldown-skill small { color:#a5b5c8;font-size:.8em;white-space:nowrap; }
-.cooldown-clock { position:relative;width:clamp(16px,3.5cqw,48px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center; }
+.cooldown-clock { position:relative;width:clamp(14px,2.6cqw,36px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center; }
 .cooldown-clock svg { position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#455467;stroke-width:2; }.cooldown-clock .cooldown-ring { stroke:var(--skill-color);stroke-width:3; }.cooldown-clock line { stroke:#ecdfb9;stroke-width:1.3; }.cooldown-clock b { position:relative;font-size:1.05em;text-shadow:0 1px 4px #000;background:#09142299;border-radius:4px;min-width:1.4em;text-align:center; }
 .cooldown-skill.is-ready { border-color:#71dfb366; }.cooldown-skill.is-ready .cooldown-clock svg { stroke:#71dfb3; }.cooldown-skill.is-ready small { color:#85e8bd; }
 .input-feedback { position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:92%;padding:6px 12px;border-radius:6px;background:#081321dc;color:#cfdeeb;font-size:12px;pointer-events:none; }.input-feedback strong { color:#f4cd87;font-weight:500; }.combat-stage .input-feedback { bottom:82px; }
