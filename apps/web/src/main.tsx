@@ -104,6 +104,26 @@ function App() {
     sessionStorage.setItem("arena-auth", JSON.stringify(a));
     seq.current = 0;
   };
+  const leavingRoom = useRef(false);
+  const leaveRoom = async () => {
+    if (leavingRoom.current) return;
+    leavingRoom.current = true;
+    try {
+      // room:leave also saves an active PVE run as unfinished.
+      if (!(await request("room:leave"))) return;
+      authRef.current = null;
+      stateRef.current = null;
+      setAuth(null);
+      setState(null);
+      sessionStorage.removeItem("arena-auth");
+      clearCode();
+      seq.current = 0;
+      setLabel("NONE");
+      setTab("home");
+    } finally {
+      leavingRoom.current = false;
+    }
+  };
   useEffect(() => {
     const tabSession = claimTabSession();
     let disposed = false;
@@ -544,7 +564,7 @@ function App() {
         {tab === "room" && state && (
           state.mode === "PVP" ? <PvpRoom state={state} auth={auth} request={request} save={save} code={code} clearCode={clearCode} generateCode={generateCode} secondsRemaining={secondsRemaining} leave={async()=>{
             if(!confirm("離開目前房間？"))return;
-            await request("room:leave"); authRef.current=null;setAuth(null);setState(null);sessionStorage.removeItem("arena-auth");setTab("home");
+            await leaveRoom();
           }}>{state.core&&<><Arena state={state} boxes={false}/><CameraPanels socket={socket} state={state} auth={auth}/></>}</PvpRoom> :
           <>
             <div className="room-heading">
@@ -568,11 +588,7 @@ function App() {
               <button
                 onClick={async () => {
                   if (!confirm("離開目前房間？PVE將保存為未完成。")) return;
-                  await request("room:leave");
-                  setAuth(null);
-                  setState(null);
-                  sessionStorage.removeItem("arena-auth");
-                  setTab("home");
+                  await leaveRoom();
                 }}
               >
                 離開房間
@@ -843,10 +859,10 @@ function App() {
                     )}
                     {state.mode === "PVE" && (
                       <button
-                        onClick={() =>
-                          confirm("結束挑戰並保存未完成紀錄？") &&
-                          request("pve:quit")
-                        }
+                        onClick={async () => {
+                          if (!confirm("結束挑戰並離開房間？進行中的挑戰將保存為未完成。")) return;
+                          await leaveRoom();
+                        }}
                       >
                         結束挑戰
                       </button>

@@ -44,6 +44,34 @@ PVP：建立房間後，其他玩家輸入房號加入；紅／藍玩家各自�
 
 排行榜預設保存在主機使用者的 `.gesture-arena/leaderboard.sqlite`，不放入 Git。重新啟動會中止正在進行的對局，已保存的排行榜仍保留。正式榜只收符合手勢來源規則的結果，鍵盤與混合來源另存。
 
+## PVE 手勢操作
+
+### PVE 連線（不需要房號）
+
+1. 開啟[遊戲網站](https://ga-game.codpy.org/)，選擇 PVE「一命連戰」。
+2. 控制來源選擇「手勢辨識器」，按「產生配對碼」。
+3. 在含有 `main.py` 的 Demo 或 initial 專案資料夾啟動辨識，將下方 `012345` 換成網站當下顯示的六位數配對碼：
+
+```powershell
+.\.venv\Scripts\python.exe main.py run --server "https://ga-game.codpy.org" --pair-code "012345" --model models/model.npz
+```
+
+4. 看到 `Paired` 後回到網站確認準備、選擇技能，倒數後開始挑戰。按「結束挑戰」會保存進行中挑戰的未完成紀錄、離開房間並回到首頁；再次遊玩需重新產生配對碼並啟動辨識器。
+
+配對碼用來連接自己的 Python 辨識器，並非雙人邀請碼；保留開頭的零，PVE 不必加 `--room`。配對碼過期或斷線後，請重新產生。網址不用加 `/controller`。macOS／Linux 將指令開頭換成 `./.venv/bin/python`；已啟用虛擬環境時可使用 `python`。initial 需先完成自己的辨識實作並訓練模型，Demo 可使用隨附的模型。
+
+`run` 會自動將鏡頭影像與手部骨架送到網站，無須加 `--preview`；加上 `--preview` 會另外開啟本機關節視窗。若有多支鏡頭，加上 `--camera 1` 選擇另一支。
+
+若出現 `No module named 'cv2'`，代表目前 Python 缺少 OpenCV；先用同一個虛擬環境安裝套件，再檢查：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe main.py prepare
+.\.venv\Scripts\python.exe main.py check
+```
+
+若尚未建立 `.venv`，先執行 `py -3.13 -m venv .venv`。雙人對戰則在網站建立或加入房間，同樣使用自己的配對碼；`--room` 可選填。
+
 ## 檔案
 
 - `apps/server/`：HTTP、Socket.IO、房間與排行榜維護。
