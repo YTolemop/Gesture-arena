@@ -220,7 +220,7 @@ export class RoomManager {
     if (!["PVP", "PRACTICE", "PVE"].includes(mode)) this.error("INVALID_MODE");
     const p = this.player(v.nickname);
     let code: string;
-    do { code = randomBytes(3).toString("hex").toUpperCase(); } while (this.rooms.has(code));
+    do { code = randomInt(100000, 1000000).toString(); } while (this.rooms.has(code));
     const r: Room = {
       id: randomUUID(),
       code,

@@ -363,12 +363,15 @@ function App() {
               <div className="join">
                 <input
                   aria-label="房間碼"
-                  placeholder="輸入房間碼"
+                  placeholder="輸入六位數字房號"
+                  inputMode="numeric"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
                   value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 />
                   <button
-                    disabled={!!auth}
+                    disabled={!!auth || !/^\d{6}$/.test(roomCode)}
                     onClick={async () => {
                       const a = await request("room:join", {
                         roomCode,
