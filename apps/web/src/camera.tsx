@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
 import type { HandPoint } from "../../../packages/protocol/camera.js";
+import { CooldownPanels } from "./cooldowns";
 
 type Preview = { playerId: string; generation: number; image?: string; hands?: HandPoint[][]; source: string; receivedAt: number };
 const fingers = [[0,1,2,3,4],[0,5,6,7,8],[5,9,10,11,12],[9,13,14,15,16],[13,17,18,19,20],[0,17]];
@@ -26,7 +27,7 @@ export function CameraPanels({ socket, state, auth }: { socket: Socket; state: a
     return () => { socket.off("camera:frame", receive); socket.off("disconnect", disconnected); clearInterval(timer); };
   }, [socket, state.roomCode]);
 
-  return <div className="camera-panels">{(state.mode === "PVP" ? [0,1] : [0]).filter(i => state.players[i]?.source === "recognizer").map(i => {
+  return <div className="camera-panels"><CooldownPanels state={state}/>{(state.mode === "PVP" ? [0,1] : [0]).filter(i => state.players[i]?.source === "recognizer").map(i => {
     const p = state.players[i];
     const frame = frames[i];
     const live = !!p?.connected && socket.connected && !!frame && frame.playerId === p.id && frame.generation === p.generation && now - frame.receivedAt < 2500;

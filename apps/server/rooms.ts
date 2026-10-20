@@ -10,7 +10,7 @@ import {
   validLoadout,
 } from "../../packages/game-core/skills.js";
 import { AIController, aiLoadout } from "../../packages/game-core/ai.js";
-import { validInput, inputLabels, Source } from "../../packages/protocol/index.js";
+import { validInput, inputLabels, ONCE, Source } from "../../packages/protocol/index.js";
 import { LeaderboardRepository, RunResult } from "./leaderboard.js";
 import { validCameraFrame } from "../../packages/protocol/camera.js";
 const token = () => randomBytes(24).toString("hex");
@@ -784,9 +784,18 @@ export class RoomManager {
       if (v.seq <= auth.seq) this.error("STALE_SEQ");
       auth.seq = v.seq;
       auth.heartbeat = this.now();
-      if (["PLAYING", "OVERTIME"].includes(r.phase))
+      const playing = ["PLAYING", "OVERTIME"].includes(r.phase);
+      const labels = inputLabels(v);
+      const previousLabels = new Set(r.core?.actors[i].input.labels);
+      if (playing)
         r.core!.input(i, inputLabels(v));
-      result = { ok: true, seq: v.seq };
+      const actor = r.core?.actors[i];
+      const inputState = !playing ? "NOT_PLAYING" : actor!.input.needsNone ? "NEUTRAL_REQUIRED"
+        : labels.some(label => ONCE.includes(label) && !previousLabels.has(label) && !actor!.input.pending.includes(label)) ? "RELEASE_REQUIRED"
+        : labels.includes("MOVE_LEFT") && labels.includes("MOVE_RIGHT") ? "OPPOSITE_DIRECTIONS"
+        : labels.some(label => label !== "NONE") && (actor!.stun > r.core!.tick || actor!.busy > r.core!.tick || actor!.blockStop > r.core!.tick) ? "ACTION_LOCKED"
+        : "READY";
+      result = { ok: true, seq: v.seq, inputState, phase: r.phase };
       s.emit("controller:status", {
         gesture: inputLabels(v)[0] ?? "NONE",
         commands: v.commands,
@@ -794,6 +803,9 @@ export class RoomManager {
         seq: v.seq,
         seat: i,
         phase: r.phase,
+        inputState,
+        matchId: r.matchId,
+        generation: p.generation,
       });
       p.socket?.emit("controller:status", {
         gesture: inputLabels(v)[0] ?? "NONE",
@@ -802,6 +814,9 @@ export class RoomManager {
         seq: v.seq,
         seat: i,
         phase: r.phase,
+        inputState,
+        matchId: r.matchId,
+        generation: p.generation,
       });
     } catch (e) {
       result = { ok: false, errorCode: (e as Error).message };
@@ -1041,8 +1056,12 @@ export class RoomManager {
           this.context(r);
         }
         for (const e of c.events)
-          if (e.type === "input")
-            r.players[e.actor]?.socket?.emit("input:result", e);
+          if (e.type === "input") {
+            const player = r.players[e.actor];
+            const feedback = { ...e, matchId: r.matchId, generation: player?.generation };
+            player?.socket?.emit("input:result", feedback);
+            player?.controller?.socket?.emit("input:result", feedback);
+          }
         const publicEvents = c.events.filter((e) => e.type !== "input");
         if (publicEvents.length) {
           const event = {

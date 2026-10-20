@@ -73,3 +73,7 @@ PVP：雙方 `player:ready {ready:true}` → DRAFT_COUNTDOWN 5秒 → DRAFT。AB
 開始／重置後必須先收到全部 NONE，超過 30 tick 沒有新輸入則清空持續狀態與待執行動作。`controller:status` 增加 `commands`（三通道客戶端）與去重後的 `gestures`；`gesture` 保留第一個指令供舊顯示使用。核心快照增加 `labels` 表示所有有效指令，`label` 保留作舊版顯示欄位。
 
 此為 protocolVersion 1 的相容擴充：新伺服器接受舊封包，新三通道客戶端需要更新後的伺服器。配對、session、generation、seq 與來源驗證維持原規則。
+
+## 即時輸入與畫面回饋
+
+Python 不逐包等待輸入 ACK；每幀檢查指令變化並立即傳送，僅相同狀態節流約 100ms。階段／世代改變時仍短暫傳送中立輸入並清除辨識歷史。`controller:status` 與輸入 ACK 增加 `inputState`（READY、NOT_PLAYING、NEUTRAL_REQUIRED、RELEASE_REQUIRED、OPPOSITE_DIRECTIONS、ACTION_LOCKED），表示接收後的目前狀態，不等同技能已執行。`input:result` 將核心執行原因、matchId、generation 同時送到本人網頁與辨識器；技能冷卻／氣量／硬直規則保持不變。網站畫面平滑緩衝為 50ms。

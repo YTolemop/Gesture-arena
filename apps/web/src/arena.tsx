@@ -65,7 +65,7 @@ export function Arena({ state, boxes }: { state: any; boxes: boolean }) {
         }
         const current = s.core;
         let actors = current.actors.map((a: any) => ({ ...a }));
-        const target = now - 100,
+        const target = now - 50,
           lo = buffer.filter((v) => v.time <= target).at(-1),
           hi = buffer.find((v) => v.time > target);
         if (

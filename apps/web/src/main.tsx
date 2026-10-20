@@ -13,6 +13,7 @@ import { claimTabSession } from "./tab-session";
 import { PvpRoom } from "./pvp";
 import { SoloDraft } from "./solo-draft";
 import { CameraPanels } from "./camera";
+import { InputFeedback } from "./input-feedback";
 import { usePairCode } from "./pair-code";
 const socket = io("/arena", { autoConnect: false });
 const keys: Record<string, string> = {
@@ -568,7 +569,7 @@ function App() {
           state.mode === "PVP" ? <PvpRoom state={state} auth={auth} request={request} save={save} code={code} clearCode={clearCode} generateCode={generateCode} secondsRemaining={secondsRemaining} leave={async()=>{
             if(!confirm("離開目前房間？"))return;
             await leaveRoom();
-          }}>{state.core&&<><Arena state={state} boxes={false}/><CameraPanels socket={socket} state={state} auth={auth}/></>}</PvpRoom> :
+          }}>{state.core&&<><Arena state={state} boxes={false}/><CameraPanels socket={socket} state={state} auth={auth}/><InputFeedback socket={socket} state={state} auth={auth}/></>}</PvpRoom> :
           <>
             <div className="room-heading">
               <div>
@@ -600,7 +601,7 @@ function App() {
             {state.phase === "SOLO_DRAFT" ? <SoloDraft state={state} request={request} readOnly={spectator}/> : <div className={`room-body ${state.phase === "CONFIG" ? "solo-lobby" : ""}`}>
               <section className="play-column">
                 {state.core && state.phase !== "CONFIG" ? (
-                  <div className="arena-with-camera"><Arena state={state} boxes={boxes} /><CameraPanels socket={socket} state={state} auth={auth}/></div>
+                  <div className="arena-with-camera"><Arena state={state} boxes={boxes} /><CameraPanels socket={socket} state={state} auth={auth}/><InputFeedback socket={socket} state={state} auth={auth}/></div>
                 ) : (
                   <div className="empty-arena">
                     ✦<p>等待配置與選技完成</p>
