@@ -5,3 +5,6 @@ logs/
 *.log
 *.sqlite*
 *.db*
+.local/
+.local-data/
+.publish/

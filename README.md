@@ -4,19 +4,66 @@
 
 不包含學員包或 Python 手勢辨識器。網站可直接使用鍵盤；使用手勢時需另外提供相容的辨識器。
 
-## 安裝與啟動
+## Windows：下載後雙擊安裝與本地架設
 
-使用 **Node.js 22.19.0 x64 / npm 10.9.3**，在此儲存庫根目錄執行：
+適用 Windows 10／11 x64，需有 Windows PowerShell 5.1。第一次安裝需連上網路，不必先裝 Node.js、npm 或 Python，也不需要系統管理員權限。
+
+1. 從 [GitHub](https://github.com/YTolemop/Gesture-arena) 選 **Code → Download ZIP**，解壓縮整個資料夾；不要在壓縮檔內直接執行。
+2. 雙擊 **`setup_windows.bat`**。它會從 Node.js 官方下載固定版本 **22.19.0 x64（npm 10.9.3）**、核對 SHA-256，將執行環境放在專案 `.local/`，依 `package-lock.json` 安裝套件，建立缺少的 `.env`，並建置網站。既有 `.env` 會保留。看到 `Setup complete` 才代表完成；詳細紀錄在 `logs/setup.log`。
+3. 雙擊 **`start_local.bat`**（`start_windows.bat` 是相同入口）。程式會檢查套件、依目前原始碼重新建置，再啟動伺服器，成功後自動開啟瀏覽器。第一次直接雙擊啟動也會自動呼叫安裝。
+4. 預設開啟 [http://localhost:3000](http://localhost:3000)。保留啟動視窗；結束時按 **Ctrl+C**。下次只要再雙擊 `start_local.bat`。
+
+這些 `.bat` 是可直接雙擊的安裝／啟動檔；專案沒有獨立 `.exe` 安裝包。安裝完成後會使用資料夾內的 Node.js，不會改動系統安裝的版本。請保留整個專案資料夾，不要只複製單一啟動檔。套件完整時，重新啟動及遊玩不需要外網。
+
+| 檔案 | 用途 |
+| --- | --- |
+| `setup_windows.bat` | 首次安裝、更新後重新安裝與建置；失敗會顯示錯誤並保留視窗 |
+| `start_local.bat` / `start_windows.bat` | 檢查、建置、啟動與自動開啟網站；不會從 GitHub 下載更新 |
+| `.env` | 本機私有設定，不上傳 GitHub |
+| `logs/setup.log` / `logs/start-check.log` | 安裝紀錄／最近一次啟動套件檢查 |
+
+## 手動安裝（Windows／Linux／macOS）
+
+先安裝 **Node.js 22.19.0**（22.x 至少 22.19.0；不可使用 20.x 或 23 以上），包含 npm。進入含有 `package.json` 的專案根目錄：
 
 ```sh
-npm ci
+npm ci --include=dev
+```
+
+複製 `.env.example` 為 `.env`：Windows PowerShell 使用 `Copy-Item .env.example .env`；Linux／macOS 使用 `cp .env.example .env`。已有 `.env` 時保留原檔。接著：
+
+```sh
 npm run build
 npm start
 ```
 
-Windows 也可雙擊 `setup_windows.bat`，完成後雙擊 `start_windows.bat`。安裝紀錄在 `logs/setup.log`。Windows 與 Linux 都使用相同的 npm 指令；啟動目錄必須是專案根目錄。
+手動 `npm start` 使用現有建置，不會自動安裝、重新建置或開瀏覽器；原始碼更新後必須再次執行 `npm run build`。啟動仍需原始碼及完整套件（包含 `tsx`），不能只搬走 `dist/`，也不要使用 `npm ci --omit=dev`。Windows 未全域安裝 Node.js 時，請使用前述雙擊入口。
 
-主機開啟 http://localhost:3000 。其他電腦使用主機的區網 IP，例如 http://192.168.1.100:3000 。安裝套件需要外網；安裝及建置完成後，網站資源均由主機提供。
+## 本機、區域網路與公開網站
+
+| 使用情境 | 瀏覽器與辨識器的伺服器網址 |
+| --- | --- |
+| 只在架設的電腦遊玩 | `http://localhost:3000` |
+| 同一區網內的其他電腦 | 主機的 IPv4，例如 `http://192.168.1.100:3000` |
+| 使用現有公開網站 | `https://ga-game.codpy.org`，不必在自己電腦啟動此伺服器 |
+
+區網架設：保持 `.env` 的 `HOST=0.0.0.0`，用 `ipconfig` 找到主機實際 Wi-Fi／乙太網路的 IPv4，在 Windows 防火牆允許所選 TCP 埠（預設 3000）的私人網路入站，再由另一台電腦開啟主機網址。`0.0.0.0` 是監聽設定，不能當作玩家網址；其他電腦的 `localhost` 指的是它自己。
+
+本地伺服器與公開網站各自有獨立房間、配對碼及排行榜。所有玩家的網頁與 Python `--server` 都必須指向同一台伺服器。下方 PVP／PVE 範例使用公開網站；本地遊玩時，將範例網址全部換成上述本機或區網網址。例如在主機上執行辨識器：
+
+```powershell
+.\.venv\Scripts\python.exe main.py run --server "http://localhost:3000" --pair-code "012345" --model models/model.npz
+```
+
+Python 指令要在另行取得的辨識器專案中執行，此包沒有 `main.py`。純鍵盤遊玩不需要 Python。跨網際網路公開架設需另外設定網域、HTTPS 及支援 WebSocket 的反向代理，詳見[架設與維護](docs/hosting_local.md)。
+
+## 更新與同步
+
+GitHub 儲存庫是發布來源。ZIP 使用者重新下載並解壓縮到新資料夾，複製自己的 `.env`，執行 `setup_windows.bat` 後再啟動；若使用舊版 `.local-data` 排行榜，先停止舊伺服器，再一併保留該資料夾，或在 `.env` 設定原資料夾的絕對路徑。不要同時啟動新舊兩份。
+
+使用 Git 且沒有本機程式修改時，可在專案根目錄執行 `git pull --ff-only`，然後重新安裝及建置；有自己的修改時先保存並處理差異。Windows 雙擊 `setup_windows.bat`；手動環境執行 `npm ci --include=dev`、`npm run build`，最後重新啟動。啟動畫面顯示「建置」只代表使用當前檔案，不代表已同步 GitHub。
+
+`.local/`、`node_modules/`、`dist/`、`.env`、紀錄與排行榜均為本機資料，不上傳；GitHub 不會附帶已安裝的 Node.js 或私人成績。
 
 ## 主機設定
 
@@ -42,7 +89,7 @@ PVP：建立房間後，其他玩家輸入房號加入；紅／藍玩家各自�
 
 鍵盤：A / D / W / S / Space / J / K / L / U / I，網站顯示對應操作。手勢辨識器透過主機網址與本人一次性配對碼連線，協定見 [通訊協定](docs/protocol.md)。
 
-排行榜預設保存在主機使用者的 `.gesture-arena/leaderboard.sqlite`，不放入 Git。重新啟動會中止正在進行的對局，已保存的排行榜仍保留。正式榜只收符合手勢來源規則的結果，鍵盤與混合來源另存。
+排行榜預設保存在主機使用者的 `.gesture-arena/leaderboard.sqlite`，不放入 Git。舊版雙擊入口建立的 `.local-data/leaderboard.sqlite` 若存在，啟動器會沿用；請在 `.env` 明確設定 `ARENA_DATA_DIR` 為該資料夾的絕對路徑，讓啟動與維護使用同一份資料。重新啟動會中止正在進行的對局，已保存的排行榜仍保留。正式榜只收符合手勢來源規則的結果，鍵盤與混合來源另存。
 
 ## PVP 與 PVE 連線操作
 

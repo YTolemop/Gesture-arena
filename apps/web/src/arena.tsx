@@ -365,7 +365,19 @@ export function Arena({ state, boxes }: { state: any; boxes: boolean }) {
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       audio: { noAudio: true },
     });
-    return () => game.destroy(true);
+    // Grid changes and fullscreen transitions can resize the parent independently
+    // of the window. Keep Phaser's fitted canvas in sync with its actual bounds.
+    const resizeObserver = new ResizeObserver(() => {
+      if (game.isBooted) {
+        game.scale.getParentBounds();
+        game.scale.refresh();
+      }
+    });
+    resizeObserver.observe(root.current!);
+    return () => {
+      resizeObserver.disconnect();
+      game.destroy(true);
+    };
   }, []);
   return <div className="arena" ref={root} />;
 }
